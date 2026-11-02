@@ -84,7 +84,7 @@ class AppModel(app:Application):AndroidViewModel(app) {
             store.snapshot(DecisionSnapshot(actionId=actionId,photoKey=p.key,oldTarget=p.target,oldIntent=p.intent,oldStatus=p.status))
             if(target!=null&&target.volume!=p.volume){store.save(p.copy(status="exception",error="首版不支持跨存储卷移动"))}
             else store.save(p.copy(status="planned",target=target?.path?:"",intent=if(target==null)"trash" else "move",error=""))
-        }}}};selected=emptySet()
+        }}}}
     }}
     fun undoDecision(){viewModelScope.launch {withContext(Dispatchers.IO){db.withTransaction{val last=store.lastDecision();for(s in last){store.get(s.photoKey)?.let{p->if(p.status=="planned")store.save(p.copy(status=s.oldStatus,target=s.oldTarget,intent=s.oldIntent))}};last.firstOrNull()?.let{store.removeDecision(it.actionId)}}}}}
     fun submit(){if(busy||authorization!=null)return;viewModelScope.launch {
@@ -96,6 +96,7 @@ class AppModel(app:Application):AndroidViewModel(app) {
             queue.add(Authorization(System.nanoTime(),kind,chunk,logs))
         }
         authorization=queue.removeFirstOrNull()
+        if(authorization!=null)selected=emptySet()
     }}
     fun authorizationFailed(reason:String){message=reason;authorized(false)}
     fun authorized(granted:Boolean){val request=authorization?:run{refresh();return};viewModelScope.launch {

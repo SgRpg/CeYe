@@ -114,14 +114,19 @@ class MediaIntegrationTest {
             device.pressBack()
             device.pressBack()
         }
-        androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java).use {
+        androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             assertTrue(device.wait(Until.hasObject(By.text("收件箱")),5000))
             assertTrue(device.wait(Until.hasObject(By.text("全选本次")),10000))
             assertFalse(device.hasObject(By.textStartsWith("本次 ")))
             assertFalse(device.hasObject(By.textContains("长按后滑动")))
             assertFalse(device.hasObject(By.text("归入相册")))
             assertTrue(device.hasObject(By.textStartsWith("已选 ")))
-            device.findObject(By.text("全选本次")).click()
+            val toggleBounds=device.findObject(By.text("全选本次")).visibleBounds
+            device.click(toggleBounds.centerX(),toggleBounds.centerY())
+            lateinit var model:AppModel
+            var chosen=emptySet<String>()
+            scenario.onActivity{model=androidx.lifecycle.ViewModelProvider(it)[AppModel::class.java];chosen=model.selected}
+            assertTrue(chosen.isNotEmpty())
             val collapsed=device.findObjects(By.descStartsWith("选择相册 "))
             val density=context.resources.displayMetrics.density
             val expected=kotlin.math.floor(((context.resources.displayMetrics.widthPixels/density-40)+12)/104).toInt().coerceAtLeast(1)
@@ -152,6 +157,44 @@ class MediaIntegrationTest {
                 }
                 assertTrue("Cover card must save classification decisions",planned.isNotEmpty())
                 assertTrue(planned.all{it.target=="Pictures/CeYeTest-$unique/second/"&&it.intent=="move"})
+                scenario.onActivity{assertEquals("Choosing an album must keep the same selection",chosen,model.selected)}
+                assertTrue(device.hasObject(By.text("取消全选")))
+                // Change the destination again without selecting the photos a second time.
+                device.findObject(By.desc("选择相册 album-1")).click()
+                val changeDeadline=android.os.SystemClock.uptimeMillis()+5000
+                var changed=false
+                while(android.os.SystemClock.uptimeMillis()<changeDeadline){
+                    val rows=runBlocking{db.store().all()}.filter{it.key in chosen}
+                    changed=rows.size==chosen.size&&rows.all{it.target=="Pictures/CeYeTest-$unique/album-1/"&&it.status=="planned"}
+                    if(changed)break
+                    android.os.SystemClock.sleep(100)
+                }
+                assertTrue("The same selected photos must accept a new destination",changed)
+                scenario.onActivity{assertEquals(chosen,model.selected)}
+                device.findObject(By.text("取消全选")).click()
+                assertTrue(device.wait(Until.hasObject(By.text("已选 0 张")),5000))
+                scenario.onActivity{assertTrue(model.selected.isEmpty())}
+                // The label changes in place. Reuse its observed bounds because Android's
+                // accessibility cache can retain the previous text after deselection.
+                device.click(toggleBounds.centerX(),toggleBounds.centerY())
+                assertTrue(device.wait(Until.hasObject(By.text("已选 ${chosen.size} 张")),5000))
+                scenario.onActivity{assertEquals(chosen,model.selected)}
+                device.findObject(By.textStartsWith("提交已选")).click()
+                assertTrue(device.wait(Until.hasObject(By.text("确认归档")),5000))
+                scenario.onActivity{assertEquals("Opening confirmation must keep selection",chosen,model.selected)}
+                device.waitForIdle(1000)
+                val confirmation=device.findObjects(By.text("确认归档"))
+                assertTrue("Confirmation should include a submit button",confirmation.size>=2)
+                confirmation.maxByOrNull{it.visibleBounds.bottom}!!.click()
+                val submitDeadline=android.os.SystemClock.uptimeMillis()+5000
+                var cleared=false
+                while(android.os.SystemClock.uptimeMillis()<submitDeadline){
+                    InstrumentationRegistry.getInstrumentation().runOnMainSync{cleared=model.selected.isEmpty()}
+                    if(cleared)break
+                    android.os.SystemClock.sleep(100)
+                }
+                assertTrue("Submitting must clear selection",cleared)
+                device.pressBack()
             } finally {db.close()}
             assertFalse(device.hasObject(By.text("选择归档相册")))
             assertFalse(device.hasObject(By.res("com.android.permissioncontroller","permission_deny_button")))
