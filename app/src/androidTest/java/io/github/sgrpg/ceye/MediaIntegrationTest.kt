@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.provider.MediaStore
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Until
 import androidx.room.Room
 import kotlinx.coroutines.runBlocking
 import org.junit.*
@@ -36,10 +38,35 @@ class MediaIntegrationTest {
         val first=Room.databaseBuilder(context,Database::class.java,name).build();first.store().save(photo);first.close()
         val second=Room.databaseBuilder(context,Database::class.java,name).build();try{assertEquals(photo,second.store().get(photo.key))}finally{second.close();context.deleteDatabase(name)}
     }
-    @Test fun nativeActivityStartsWithoutCrashing(){
+    @Test fun startupUsesSystemDialogAndDenialDoesNotRepeat(){
+        val device=androidx.test.uiautomator.UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        // Runs on a fresh emulator install; it never grants access to a user's library.
+        androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java).use {
+            val deny=device.wait(Until.findObject(By.res("com.android.permissioncontroller","permission_deny_button")),10000)
+            assertNotNull("First launch should show Android's photo permission dialog",deny)
+            deny!!.click()
+            assertTrue(device.wait(Until.hasObject(By.text("收件箱")),5000))
+            assertTrue(device.hasObject(By.text("暂无照片")))
+            assertFalse(device.hasObject(By.text("先允许册页访问照片")))
+        }
+        // Closing and reopening the Activity loads the recorded request from disk.
         androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-            scenario.onActivity { activity -> assertTrue(activity.window.decorView.isShown) }
+            assertTrue(device.wait(Until.hasObject(By.text("允许访问")),5000))
+            assertFalse(device.wait(Until.hasObject(By.res("com.android.permissioncontroller","permission_deny_button")),1500))
+            scenario.recreate()
+            assertTrue(device.wait(Until.hasObject(By.text("允许访问")),5000))
+            assertFalse(device.hasObject(By.res("com.android.permissioncontroller","permission_deny_button")))
+            device.findObject(By.text("允许访问")).click()
+            val allow=device.wait(Until.findObject(By.res("com.android.permissioncontroller","permission_allow_all_button")),5000)
+                ?:device.wait(Until.findObject(By.res("com.android.permissioncontroller","permission_allow_button")),2000)
+            assertNotNull("Retry should request Android permission again",allow)
+            allow!!.click()
+            assertTrue(device.wait(Until.hasObject(By.text("选择归档相册")),10000))
+            assertEquals(2,PhotoAccess.level(context))
+        }
+        androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java).use {
+            assertTrue(device.wait(Until.hasObject(By.text("选择归档相册")),5000))
+            assertFalse(device.hasObject(By.res("com.android.permissioncontroller","permission_deny_button")))
         }
     }
 }

@@ -1,8 +1,6 @@
 package io.github.sgrpg.ceye
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.*
@@ -53,7 +51,12 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
 @Composable private fun CeYe(vm:AppModel=viewModel()) {
     val context=LocalContext.current
     val lifecycle=LocalLifecycleOwner.current
-    val photos by vm.photos.collectAsStateWithLifecycle()
+    val storedPhotos by vm.photos.collectAsStateWithLifecycle()
+    var photoAccess by remember{mutableIntStateOf(PhotoAccess.level(context))}
+    val photos=if(photoAccess>0)storedPhotos else emptyList()
+    val availableAlbums=if(photoAccess>0)vm.albums else emptyList()
+    val scope=rememberCoroutineScope()
+    var requestingRead by rememberSaveable{mutableStateOf(false)}
     val logs by vm.operations.collectAsStateWithLifecycle()
     val nav=rememberNavController()
     val back by nav.currentBackStackEntryAsState()
@@ -65,9 +68,23 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
     var selectedTargetsOnly by remember{mutableStateOf(false)}
     BackHandler(enabled=page=="inbox"&&vm.inbox.isNotEmpty()){(context as? MainActivity)?.moveTaskToBack(true)}
     fun go(route:String){modal="";nav.navigate(route){launchSingleTop=true}}
-    val readPermissions=rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){vm.refresh(true)}
-    fun requestRead(){readPermissions.launch(if(Build.VERSION.SDK_INT>=34)arrayOf(Manifest.permission.READ_MEDIA_IMAGES,Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) else if(Build.VERSION.SDK_INT>=33)arrayOf(Manifest.permission.READ_MEDIA_IMAGES) else arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE))}
-    fun canRead():Boolean=context.checkSelfPermission(if(Build.VERSION.SDK_INT>=33)Manifest.permission.READ_MEDIA_IMAGES else Manifest.permission.READ_EXTERNAL_STORAGE)==PackageManager.PERMISSION_GRANTED || (Build.VERSION.SDK_INT>=34&&context.checkSelfPermission(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)==PackageManager.PERMISSION_GRANTED)
+    val readPermissions=rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){
+        requestingRead=false
+        photoAccess=PhotoAccess.level(context)
+        if(photoAccess>0)vm.refresh(true)
+    }
+    fun requestRead(){
+        if(requestingRead)return
+        requestingRead=true
+        scope.launch {
+            vm.markPhotoPermissionRequested()
+            readPermissions.launch(PhotoAccess.permissions())
+        }
+    }
+    LaunchedEffect(vm.preferencesLoaded,vm.photoPermissionRequested){
+        if(vm.preferencesLoaded&&!vm.photoPermissionRequested&&PhotoAccess.level(context)==0)requestRead()
+    }
+    LaunchedEffect(vm.preferencesLoaded){if(vm.preferencesLoaded&&PhotoAccess.level(context)>0)vm.refresh(true)}
     val authorize=rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()){vm.authorized(it.resultCode==android.app.Activity.RESULT_OK)}
     var sent by rememberSaveable{mutableStateOf(0L)}
     val auth=vm.authorization
@@ -76,27 +93,25 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
         val pending=if(auth.kind=="move")MediaStore.createWriteRequest(context.contentResolver,uris) else MediaStore.createTrashRequest(context.contentResolver,uris,auth.kind=="trash")
         authorize.launch(IntentSenderRequest.Builder(pending.intentSender).build())
     }catch(e:Exception){vm.authorizationFailed(e.message?:"无法请求系统授权")}}}
+    val preferencesReady by rememberUpdatedState(vm.preferencesLoaded)
     DisposableEffect(lifecycle){
         val handler=Handler(Looper.getMainLooper())
-        val update=Runnable{if(canRead())vm.refresh()}
+        val update=Runnable{if(PhotoAccess.level(context)>0&&preferencesReady)vm.refresh()}
         val observer=object:ContentObserver(handler){override fun onChange(selfChange:Boolean){handler.removeCallbacks(update);handler.postDelayed(update,400)}}
         val listener=LifecycleEventObserver{_,event->when(event){
-            Lifecycle.Event.ON_START->{if(canRead())vm.refresh(true);context.contentResolver.registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,true,observer)}
+            Lifecycle.Event.ON_START->{context.contentResolver.registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,true,observer)}
+            Lifecycle.Event.ON_RESUME->{photoAccess=PhotoAccess.level(context);if(photoAccess>0&&preferencesReady)vm.refresh(true)}
             Lifecycle.Event.ON_STOP->{context.contentResolver.unregisterContentObserver(observer);handler.removeCallbacks(update)}
             else->Unit
         }}
         lifecycle.lifecycle.addObserver(listener)
-        if(canRead())vm.refresh(true)
         onDispose{lifecycle.lifecycle.removeObserver(listener);context.contentResolver.unregisterContentObserver(observer);handler.removeCallbacks(update)}
     }
     LaunchedEffect(vm.session){if(vm.session.isNotEmpty()&&vm.inbox.isNotEmpty()&&vm.configured)go("inbox")}
     MaterialTheme(colorScheme=lightColorScheme(primary=Blue,onPrimary=Color.White,background=Color.White,surface=Color.White,onSurface=Ink,outline=Line),typography=Typography(bodyLarge=androidx.compose.ui.text.TextStyle(fontSize=14.sp),bodyMedium=androidx.compose.ui.text.TextStyle(fontSize=14.sp))) {
         Surface(color=Color.White,modifier=Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
-                if(!canRead()) {
-                    Header("册页")
-                    Column(Modifier.weight(1f).padding(24.dp),verticalArrangement=Arrangement.Center){Text("先允许册页访问照片",fontSize=24.sp);Spacer(Modifier.height(16.dp));Text("在你允许的范围内，发现新照片并整理到手机已有相册。",color=Muted);Spacer(Modifier.height(24.dp));Primary("选择照片访问范围",true){requestRead()}}
-                } else if(!vm.configured) {
+                if(photoAccess>0&&vm.preferencesLoaded&&!vm.configured) {
                     Header("欢迎使用册页")
                     Text("从现在开始，给新照片一个位置。",Modifier.padding(20.dp),color=Muted)
                     Text("选择归档相册",Modifier.padding(horizontal=20.dp),fontSize=20.sp)
@@ -110,12 +125,21 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
                         if(page in listOf("albums","photos"))IconButton(onClick={go("settings")}){Icon(CeYeIcons.Settings,"设置")}
                     }
                     if(vm.busy)LinearProgressIndicator(Modifier.fillMaxWidth(),color=Blue,trackColor=Soft)
-                    if(Build.VERSION.SDK_INT>=34&&context.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES)!=PackageManager.PERMISSION_GRANTED)TextButton(onClick={requestRead()}){Text("部分图片模式 · 调整访问范围")}
+                    if(photoAccess==0&&vm.preferencesLoaded)Row(Modifier.fillMaxWidth().background(Canvas).padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically){
+                        Text("允许访问照片后，可查看和整理图片",Modifier.weight(1f),fontSize=12.sp,color=Muted)
+                        TextButton(onClick={
+                            val activity=context as? MainActivity
+                            if(vm.photoPermissionRequested&&PhotoAccess.permissions().none{activity?.shouldShowRequestPermissionRationale(it)==true})context.startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:${context.packageName}")))
+                            else requestRead()
+                        }){Text("允许访问",fontSize=12.sp)}
+                    }
+                    if(photoAccess==1)TextButton(onClick={requestRead()}){Text("部分图片模式 · 调整访问范围")}
                     if(vm.message.isNotEmpty())Row(Modifier.fillMaxWidth().background(Soft).padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically){Text(vm.message,Modifier.weight(1f),fontSize=12.sp);IconButton(onClick={vm.dismissMessage()}){Icon(CeYeIcons.Close,"关闭提示")}}
                     Box(Modifier.weight(1f)) { NavHost(nav,startDestination="inbox") {
                         composable("inbox"){
                             val pending=photos.filter{it.key in vm.session&&it.status in listOf("pending","planned")}
-                            if(pending.isEmpty())Column(Modifier.fillMaxSize().padding(24.dp),verticalArrangement=Arrangement.Center,horizontalAlignment=Alignment.CenterHorizontally){Icon(CeYeIcons.Check,"完成",Modifier.size(48.dp),tint=Blue);Spacer(Modifier.height(20.dp));Text("这批照片，整理好了",fontSize=24.sp);Text("可以去看看你的相册了。",color=Muted,modifier=Modifier.padding(16.dp));Primary("浏览相册",true){go("albums")};if(vm.waiting>0)TextButton(onClick={vm.includeNew()}){Text("继续整理新增 ${vm.waiting} 张")}}
+                            if(photoAccess==0)Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){Text("暂无照片",color=Muted,fontSize=14.sp)}
+                            else if(pending.isEmpty())Column(Modifier.fillMaxSize().padding(24.dp),verticalArrangement=Arrangement.Center,horizontalAlignment=Alignment.CenterHorizontally){Icon(CeYeIcons.Check,"完成",Modifier.size(48.dp),tint=Blue);Spacer(Modifier.height(20.dp));Text("这批照片，整理好了",fontSize=24.sp);Text("可以去看看你的相册了。",color=Muted,modifier=Modifier.padding(16.dp));Primary("浏览相册",true){go("albums")};if(vm.waiting>0)TextButton(onClick={vm.includeNew()}){Text("继续整理新增 ${vm.waiting} 张")}}
                             else Column(Modifier.fillMaxSize()) {
                                 Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("本次 ${vm.session.size} 张",color=Muted,fontSize=13.sp);Text("${pending.count{it.status=="planned"}} 张待提交",color=Muted,fontSize=13.sp)}
                                 if(vm.waiting>0)TextButton(onClick={vm.includeNew()}){Text("另有 ${vm.waiting} 张新图片 · 加入本次")}
@@ -130,7 +154,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
                                 HorizontalDivider(color=Line)
                                 Row(Modifier.fillMaxWidth().padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){Text("归入相册");TextButton(onClick={if(!grid&&current!=null)vm.select(setOf(current.key));modal="destinations"}){Text("全部相册",fontSize=12.sp,color=Muted)}}
                                 Row(Modifier.padding(horizontal=20.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
-                                    vm.albums.filter{it.key in vm.targets}.take(4).forEach{album->OutlinedButton(onClick={vm.decide(if(grid)vm.selected else setOfNotNull(current?.key),album)},enabled=!vm.busy&&(if(grid)vm.selected.isNotEmpty() else current!=null),modifier=Modifier.weight(1f).heightIn(min=48.dp),shape=RoundedCornerShape(12.dp),contentPadding=PaddingValues(3.dp),border=BorderStroke(1.dp,Line)){Text(album.name,maxLines=1,fontSize=13.sp)}}
+                                    availableAlbums.filter{it.key in vm.targets}.take(4).forEach{album->OutlinedButton(onClick={vm.decide(if(grid)vm.selected else setOfNotNull(current?.key),album)},enabled=!vm.busy&&(if(grid)vm.selected.isNotEmpty() else current!=null),modifier=Modifier.weight(1f).heightIn(min=48.dp),shape=RoundedCornerShape(12.dp),contentPadding=PaddingValues(3.dp),border=BorderStroke(1.dp,Line)){Text(album.name,maxLines=1,fontSize=13.sp)}}
                                 }
                                 Row(Modifier.padding(start=20.dp,end=20.dp,top=12.dp,bottom=8.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)){
                                     OutlinedIcon(CeYeIcons.Undo,"撤销分类"){vm.undoDecision()}
@@ -145,7 +169,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
                                 Row(Modifier.fillMaxWidth().padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){Text("与手机已有相册保持一致",fontSize=13.sp,color=Muted);TextButton(onClick={modal="organize"}){Text("整理")}}
                                 Row(Modifier.padding(horizontal=20.dp)){TextButton(onClick={selectedTargetsOnly=false}){Text("全部相册",color=if(!selectedTargetsOnly)Blue else Muted)};TextButton(onClick={selectedTargetsOnly=true}){Text("归档目标",color=if(selectedTargetsOnly)Blue else Muted)}}
                                 LazyVerticalGrid(GridCells.Fixed(2),contentPadding=PaddingValues(20.dp),horizontalArrangement=Arrangement.spacedBy(14.dp),verticalArrangement=Arrangement.spacedBy(22.dp)){
-                                    items(vm.albums.filter{!selectedTargetsOnly||it.key in vm.targets},key={it.key}){a->val content=photos.filter{it.volume==a.volume&&it.path==a.path&&it.status !in setOf("trashed","unavailable")};Column(Modifier.clickable{albumFilter=a;go("photos")}){AsyncImage(content.firstOrNull()?.uri,a.name,Modifier.fillMaxWidth().aspectRatio(1.12f).clip(RoundedCornerShape(16.dp)).background(Canvas),contentScale=ContentScale.Crop);Row(Modifier.padding(top=9.dp).fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(a.name,fontSize=15.sp);Text(content.size.toString(),fontSize=12.sp,color=Muted)}}}
+                                    items(availableAlbums.filter{!selectedTargetsOnly||it.key in vm.targets},key={it.key}){a->val content=photos.filter{it.volume==a.volume&&it.path==a.path&&it.status !in setOf("trashed","unavailable")};Column(Modifier.clickable{albumFilter=a;go("photos")}){AsyncImage(content.firstOrNull()?.uri,a.name,Modifier.fillMaxWidth().aspectRatio(1.12f).clip(RoundedCornerShape(16.dp)).background(Canvas),contentScale=ContentScale.Crop);Row(Modifier.padding(top=9.dp).fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(a.name,fontSize=15.sp);Text(content.size.toString(),fontSize=12.sp,color=Muted)}}}
                                 }
                             }
                         }
@@ -154,7 +178,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
                             BrowsingGrid(photos.filter{it.status !in setOf("trashed","unavailable")&&(albumFilter==null||Album(it.volume,it.path)==albumFilter)}){viewing=it;go("viewer")}
                         }}
                         composable("settings") {Column(Modifier.fillMaxSize().padding(horizontal=20.dp)){
-                            Spacer(Modifier.height(16.dp));SettingRow("归档相册","已选 ${vm.targets.size} 个相册"){modal="targets"};SettingRow("照片权限",if(Build.VERSION.SDK_INT>=33&&context.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES)==PackageManager.PERMISSION_GRANTED)"全部图片" else if(Build.VERSION.SDK_INT<=32)"全部图片" else "部分图片"){requestRead()};Spacer(Modifier.weight(1f));Text("册页",Modifier.fillMaxWidth().padding(bottom=24.dp),color=Muted,fontSize=12.sp,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
+                            Spacer(Modifier.height(16.dp));SettingRow("归档相册","已选 ${vm.targets.size} 个相册"){modal="targets"};SettingRow("照片权限",when(photoAccess){2->"全部图片";1->"部分图片";else->"未允许"}){requestRead()};Spacer(Modifier.weight(1f));Text("册页",Modifier.fillMaxWidth().padding(bottom=24.dp),color=Muted,fontSize=12.sp,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
                         }}
                         composable("history"){Column{Text("选择旧照片，加入一次独立整理会话",Modifier.padding(20.dp),color=Muted);PhotoGrid(photos.filter{it.status !in setOf("trashed","unavailable")},vm.selected,{vm.select(it)},Modifier.weight(1f),false);Box(Modifier.padding(20.dp)){Primary("整理已选 ${vm.selected.size} 张",vm.selected.isNotEmpty()){vm.history(vm.selected);go("inbox")}}}}
                         composable("records"){LazyColumn(contentPadding=PaddingValues(20.dp)){items(logs,key={it.id}){op->Column(Modifier.padding(vertical=12.dp)){Text(if(op.kind=="trash")"移入回收站"else if(op.kind=="restore")"恢复图片"else"归档至 ${op.target}");Text("${date(op.time)} · ${op.state}",fontSize=12.sp,color=Muted);if(op.error.isNotEmpty())Text(op.error,fontSize=12.sp,color=Muted);if(op.state=="done")TextButton(onClick={vm.undo(op);go("inbox")}){Text("撤销")};HorizontalDivider(color=Line)}}}}
@@ -171,7 +195,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
                     Column(Modifier.fillMaxWidth().padding(start=20.dp,end=20.dp,bottom=24.dp)){
                         when(modal){
                             "targets"->{Text("归档相册",fontSize=20.sp);Text("这些已有相册中的新图片会自动归档",fontSize=13.sp,color=Muted);AlbumChoices(vm,Modifier.heightIn(max=400.dp))}
-                            "destinations"->{Text("选择相册",fontSize=20.sp);LazyColumn(Modifier.heightIn(max=400.dp)){items(vm.albums,key={it.key}){a->SettingRow(a.name,a.path){vm.decide(vm.selected,a);modal=""}}}}
+                            "destinations"->{Text("选择相册",fontSize=20.sp);LazyColumn(Modifier.heightIn(max=400.dp)){items(availableAlbums,key={it.key}){a->SettingRow(a.name,a.path){vm.decide(vm.selected,a);modal=""}}}}
                             "confirm"->{Text("确认归档",fontSize=20.sp);Text("移动至手机已有相册",color=Muted,fontSize=13.sp);photos.filter{it.key in vm.session&&it.status=="planned"}.groupBy{if(it.intent=="trash")"系统回收站"else if(it.intent=="restore")"恢复图片"else it.target}.forEach{(name,items)->Row(Modifier.fillMaxWidth().padding(vertical=14.dp),horizontalArrangement=Arrangement.SpaceBetween){Text(name,Modifier.weight(1f));Text("${items.size} 张")}};Text("按系统提示确认后执行；取消会保留分类决定。",fontSize=12.sp,color=Muted,modifier=Modifier.padding(vertical=12.dp));Primary("确认归档",!vm.busy){modal="";vm.submit()}}
                             "organize"->{Text("整理",fontSize=20.sp);SettingRow("历史整理","选择旧照片重新分类"){vm.select(emptySet());go("history")};SettingRow("最近归档","查看记录或撤销归档"){go("records")};if(photos.any{it.status=="exception"})SettingRow("待修复","有 ${photos.count{it.status=="exception"}} 张需要处理"){go("repair")}}
                             "menu"->{Text("整理选项",fontSize=20.sp);SettingRow("设置","归档相册与照片权限"){go("settings")};SettingRow("待修复","查看暂时无法处理的图片"){go("repair")};SettingRow("暂停整理","决定已保存，下次打开继续"){modal="";(context as? MainActivity)?.moveTaskToBack(true)}}

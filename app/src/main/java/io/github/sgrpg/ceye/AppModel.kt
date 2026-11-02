@@ -25,6 +25,8 @@ class AppModel(app:Application):AndroidViewModel(app) {
     val operations=store.operations().stateIn(viewModelScope,SharingStarted.Eagerly,emptyList())
     var targets by mutableStateOf(setOf<String>());private set
     var configured by mutableStateOf(false);private set
+    var preferencesLoaded by mutableStateOf(false);private set
+    var photoPermissionRequested by mutableStateOf(false);private set
     var session by mutableStateOf(setOf<String>());private set
     var selected by mutableStateOf(setOf<String>())
     var message by mutableStateOf("");private set
@@ -35,10 +37,15 @@ class AppModel(app:Application):AndroidViewModel(app) {
     private var sessionStarted=false
     private val targetKey=stringSetPreferencesKey("targets")
     private val configuredKey=booleanPreferencesKey("configured")
+    private val permissionRequestedKey=booleanPreferencesKey("photo_permission_requested")
     val albums get()=photos.value.filter{it.path.isNotBlank()&&it.status !in setOf("trashed","unavailable")}.map{Album(it.volume,it.path)}.distinctBy{it.key}.sortedBy{it.name}
     val inbox get()=photos.value.filter{it.key in session && it.status in setOf("pending","planned")}
     val waiting get()=photos.value.count{it.key !in session && it.status in setOf("pending","planned")}
-    init { viewModelScope.launch { val settings=getApplication<Application>().settings.data.first();targets=settings[targetKey]?:emptySet();configured=settings[configuredKey]?:false } }
+    init { viewModelScope.launch { val settings=getApplication<Application>().settings.data.first();targets=settings[targetKey]?:emptySet();configured=settings[configuredKey]?:false;photoPermissionRequested=settings[permissionRequestedKey]?:false;preferencesLoaded=true } }
+    suspend fun markPhotoPermissionRequested() {
+        getApplication<Application>().settings.edit{it[permissionRequestedKey]=true}
+        photoPermissionRequested=true
+    }
     fun select(keys:Set<String>) { selected=keys }
     fun target(album:Album,enabled:Boolean) { viewModelScope.launch {
         targets=if(enabled)targets+album.key else targets-album.key
