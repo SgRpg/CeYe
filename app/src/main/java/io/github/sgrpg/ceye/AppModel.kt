@@ -23,8 +23,6 @@ class AppModel(app:Application):AndroidViewModel(app) {
     private val media=MediaGateway(app)
     val photos=store.observe().stateIn(viewModelScope,SharingStarted.Eagerly,emptyList())
     val operations=store.operations().stateIn(viewModelScope,SharingStarted.Eagerly,emptyList())
-    var targets by mutableStateOf(setOf<String>());private set
-    var configured by mutableStateOf(false);private set
     var preferencesLoaded by mutableStateOf(false);private set
     var photoPermissionRequested by mutableStateOf(false);private set
     var session by mutableStateOf(setOf<String>());private set
@@ -35,23 +33,16 @@ class AppModel(app:Application):AndroidViewModel(app) {
     private val queue=ArrayDeque<Authorization>()
     private val sync=Mutex()
     private var sessionStarted=false
-    private val targetKey=stringSetPreferencesKey("targets")
-    private val configuredKey=booleanPreferencesKey("configured")
     private val permissionRequestedKey=booleanPreferencesKey("photo_permission_requested")
     val albums get()=photos.value.filter{it.path.isNotBlank()&&it.status !in setOf("trashed","unavailable")}.map{Album(it.volume,it.path)}.distinctBy{it.key}.sortedBy{it.name}
     val inbox get()=photos.value.filter{it.key in session && it.status in setOf("pending","planned")}
     val waiting get()=photos.value.count{it.key !in session && it.status in setOf("pending","planned")}
-    init { viewModelScope.launch { val settings=getApplication<Application>().settings.data.first();targets=settings[targetKey]?:emptySet();configured=settings[configuredKey]?:false;photoPermissionRequested=settings[permissionRequestedKey]?:false;preferencesLoaded=true } }
+    init { viewModelScope.launch { val settings=getApplication<Application>().settings.data.first();photoPermissionRequested=settings[permissionRequestedKey]?:false;preferencesLoaded=true } }
     suspend fun markPhotoPermissionRequested() {
         getApplication<Application>().settings.edit{it[permissionRequestedKey]=true}
         photoPermissionRequested=true
     }
     fun select(keys:Set<String>) { selected=keys }
-    fun target(album:Album,enabled:Boolean) { viewModelScope.launch {
-        targets=if(enabled)targets+album.key else targets-album.key
-        getApplication<Application>().settings.edit{it[targetKey]=targets}
-    } }
-    fun configure() {viewModelScope.launch { configured=true;getApplication<Application>().settings.edit{it[configuredKey]=true};refresh(true) } }
     fun refresh(newSession:Boolean=false) {viewModelScope.launch {
         if(authorization!=null)return@launch
         sync.withLock {
@@ -65,11 +56,10 @@ class AppModel(app:Application):AndroidViewModel(app) {
                     val old=store.all().associateBy{it.key}
                     val changes=scanned.map { p ->
                         val prev=old[p.key];val cp=checkpoints[p.volume];val version=edges[p.volume]
-                        val auto=Album(p.volume,p.path).key in targets
                         if(prev!=null && (cp==null||cp.version==version?.version)) {
                             val recovered=prev.status=="exception"
-                            p.copy(status=if(auto&&prev.status in setOf("pending","planned","exception"))"archived" else if(recovered)"pending" else if(prev.status=="unavailable")"history" else prev.status,target=if(auto)"" else prev.target,intent=if(auto)"" else prev.intent,error=if(recovered)"" else prev.error)
-                        } else p.copy(status=when{auto->"archived";cp==null->if(p.added>(version?.baseline?:Long.MAX_VALUE))"pending" else "history";cp.version!=version?.version->"pending";p.added>cp.baseline->"pending";else->"history"})
+                            p.copy(status=if(recovered)"pending" else if(prev.status=="unavailable")"history" else prev.status,target=prev.target,intent=prev.intent,error=if(recovered)"" else prev.error)
+                        } else p.copy(status=when{cp==null->if(p.added>(version?.baseline?:Long.MAX_VALUE))"pending" else "history";cp.version!=version?.version->"pending";p.added>cp.baseline->"pending";else->"history"})
                     }
                     store.save(changes)
                     val visible=scanned.map{it.key}.toSet()
