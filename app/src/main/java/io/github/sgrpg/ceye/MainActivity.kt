@@ -55,6 +55,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
     var photoAccess by remember{mutableIntStateOf(PhotoAccess.level(context))}
     val photos=if(photoAccess>0)storedPhotos else emptyList()
     val availableAlbums=if(photoAccess>0)vm.albums else emptyList()
+    val albumDestinations=rememberAlbumDestinations(availableAlbums,photos)
     val scope=rememberCoroutineScope()
     var requestingRead by rememberSaveable{mutableStateOf(false)}
     val logs by vm.operations.collectAsStateWithLifecycle()
@@ -132,21 +133,17 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
                             if(photoAccess==0)Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){Text("暂无照片",color=Muted,fontSize=14.sp)}
                             else if(pending.isEmpty())Column(Modifier.fillMaxSize().padding(24.dp),verticalArrangement=Arrangement.Center,horizontalAlignment=Alignment.CenterHorizontally){Icon(CeYeIcons.Check,"完成",Modifier.size(48.dp),tint=Blue);Spacer(Modifier.height(20.dp));Text("这批照片，整理好了",fontSize=24.sp);Text("可以去看看你的相册了。",color=Muted,modifier=Modifier.padding(16.dp));Primary("浏览相册",true){go("albums")};if(vm.waiting>0)TextButton(onClick={vm.includeNew()}){Text("继续整理新增 ${vm.waiting} 张")}}
                             else Column(Modifier.fillMaxSize()) {
-                                Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("本次 ${vm.session.size} 张",color=Muted,fontSize=13.sp);Text("${pending.count{it.status=="planned"}} 张待提交",color=Muted,fontSize=13.sp)}
                                 if(vm.waiting>0)TextButton(onClick={vm.includeNew()}){Text("另有 ${vm.waiting} 张新图片 · 加入本次")}
                                 val current=pending.firstOrNull{it.status=="pending"}
                                 if(grid) {
                                     Row(Modifier.fillMaxWidth().padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){Text("已选 ${vm.selected.size} 张",fontSize=13.sp);TextButton(onClick={vm.select(if(pending.all{it.key in vm.selected})emptySet()else pending.map{it.key}.toSet())}){Text(if(pending.all{it.key in vm.selected})"取消全选" else "全选本次",fontSize=13.sp)}}
-                                    Text("长按后滑动连续选择；从已选照片开始可连续取消。",Modifier.padding(horizontal=20.dp,vertical=6.dp),color=Muted,fontSize=12.sp)
                                     PhotoGrid(pending,vm.selected,{vm.select(it)},Modifier.weight(1f),true)
                                 }else if(current!=null){
                                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState())){AsyncImage(current.uri,"待分类照片",Modifier.padding(horizontal=20.dp).fillMaxWidth().aspectRatio(1.04f).clip(RoundedCornerShape(16.dp)).background(Canvas).clickable{viewing=current;go("viewer")},contentScale=ContentScale.Fit);Row(Modifier.fillMaxWidth().padding(20.dp),horizontalArrangement=Arrangement.SpaceBetween){Text(date(current.date),fontSize=12.sp,color=Muted);Text(current.path.trimEnd('/').substringAfterLast('/'),fontSize=12.sp,color=Muted)}}
                                 }else Box(Modifier.weight(1f).fillMaxWidth(),contentAlignment=Alignment.Center){Text("分类已选好，提交后完成归档",color=Muted)}
                                 HorizontalDivider(color=Line)
-                                Row(Modifier.fillMaxWidth().padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){Text("归入相册");TextButton(onClick={if(!grid&&current!=null)vm.select(setOf(current.key));modal="destinations"}){Text("全部相册",fontSize=12.sp,color=Muted)}}
-                                Row(Modifier.padding(horizontal=20.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
-                                    availableAlbums.take(4).forEach{album->OutlinedButton(onClick={vm.decide(if(grid)vm.selected else setOfNotNull(current?.key),album)},enabled=!vm.busy&&(if(grid)vm.selected.isNotEmpty() else current!=null),modifier=Modifier.weight(1f).heightIn(min=48.dp),shape=RoundedCornerShape(12.dp),contentPadding=PaddingValues(3.dp),border=BorderStroke(1.dp,Line)){Text(album.name,maxLines=1,fontSize=13.sp)}}
-                                }
+                                Row(Modifier.fillMaxWidth().padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.End){TextButton(onClick={if(!grid&&current!=null)vm.select(setOf(current.key));modal="destinations"}){Text("全部相册",fontSize=12.sp,color=Muted)}}
+                                AlbumDestinationStrip(albumDestinations,!vm.busy&&(if(grid)vm.selected.isNotEmpty() else current!=null),{album->vm.decide(if(grid)vm.selected else setOfNotNull(current?.key),album)},Modifier.padding(horizontal=20.dp))
                                 Row(Modifier.padding(start=20.dp,end=20.dp,top=12.dp,bottom=8.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)){
                                     OutlinedIcon(CeYeIcons.Undo,"撤销分类"){vm.undoDecision()}
                                     OutlinedIcon(CeYeIcons.DeleteOutline,"移入回收站"){vm.decide(if(grid)vm.selected else setOfNotNull(current?.key),null)}
@@ -180,10 +177,10 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
                     if(page in listOf("albums","photos"))Row(Modifier.fillMaxWidth().border(BorderStroke(1.dp,Line)),horizontalArrangement=Arrangement.SpaceEvenly){TextButton(onClick={albumFilter=null;go("photos")}){Icon(CeYeIcons.Image,null);Text("照片",Modifier.padding(8.dp))};TextButton(onClick={go("albums")}){Icon(CeYeIcons.Folder,null);Text("相册",Modifier.padding(8.dp))}}
             }
             if(modal.isNotEmpty()) {
-                ModalBottomSheet(onDismissRequest={modal=""},containerColor=Color.White,shape=RoundedCornerShape(topStart=24.dp,topEnd=24.dp)) {
+                ModalBottomSheet(onDismissRequest={modal=""},sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=modal=="destinations"),containerColor=Color.White,shape=RoundedCornerShape(topStart=24.dp,topEnd=24.dp)) {
                     Column(Modifier.fillMaxWidth().padding(start=20.dp,end=20.dp,bottom=24.dp)){
                         when(modal){
-                            "destinations"->{Text("选择相册",fontSize=20.sp);LazyColumn(Modifier.heightIn(max=400.dp)){items(availableAlbums,key={it.key}){a->SettingRow(a.name,a.path){vm.decide(vm.selected,a);modal=""}}}}
+                            "destinations"->{Text("选择相册",fontSize=20.sp);AlbumDestinationGrid(albumDestinations,!vm.busy&&vm.selected.isNotEmpty(),{album->vm.decide(vm.selected,album);modal=""})}
                             "confirm"->{Text("确认归档",fontSize=20.sp);Text("移动至手机已有相册",color=Muted,fontSize=13.sp);photos.filter{it.key in vm.session&&it.status=="planned"}.groupBy{if(it.intent=="trash")"系统回收站"else if(it.intent=="restore")"恢复图片"else it.target}.forEach{(name,items)->Row(Modifier.fillMaxWidth().padding(vertical=14.dp),horizontalArrangement=Arrangement.SpaceBetween){Text(name,Modifier.weight(1f));Text("${items.size} 张")}};Text("按系统提示确认后执行；取消会保留分类决定。",fontSize=12.sp,color=Muted,modifier=Modifier.padding(vertical=12.dp));Primary("确认归档",!vm.busy){modal="";vm.submit()}}
                             "organize"->{Text("整理",fontSize=20.sp);SettingRow("历史整理","选择旧照片重新分类"){vm.select(emptySet());go("history")};SettingRow("最近归档","查看记录或撤销归档"){go("records")};if(photos.any{it.status=="exception"})SettingRow("待修复","有 ${photos.count{it.status=="exception"}} 张需要处理"){go("repair")}}
                             "menu"->{Text("整理选项",fontSize=20.sp);SettingRow("设置","照片访问权限"){go("settings")};SettingRow("待修复","查看暂时无法处理的图片"){go("repair")};SettingRow("暂停整理","决定已保存，下次打开继续"){modal="";(context as? MainActivity)?.moveTaskToBack(true)}}

@@ -33,6 +33,13 @@ class MediaIntegrationTest {
         return Photo("external_primary:$id",id,"external_primary",uri.toString(),"Pictures/CeYeTest-$unique/$folder/",name,0,0,0,0)
     }
     private fun hash(p:Photo)=resolver.openInputStream(android.net.Uri.parse(p.uri))!!.use{MessageDigest.getInstance("SHA-256").digest(it.readBytes()).toList()}
+    private fun saveScreenshot(device:androidx.test.uiautomator.UiDevice,name:String){
+        val folder=InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
+            ?.let{java.io.File(it)}?:context.getExternalFilesDir(null)!!
+        folder.mkdirs()
+        device.waitForIdle(1000)
+        assertTrue(device.takeScreenshot(java.io.File(folder,name)))
+    }
     @After fun clean(){created.forEach{resolver.delete(it,null,null)}}
     @Test fun movingKeepsBytesAndChangesActualAlbum(){val p=create("source","photo.jpg",0xffff0000.toInt());val before=hash(p);val gateway=MediaGateway(context);val target="Pictures/CeYeTest-$unique/target/";gateway.move(p,target);assertEquals(target,gateway.location(p)!!.first);assertEquals(before,hash(p))}
     @Test fun collisionPreservesBothFiles(){val existing=create("target","photo.jpg",0xff00ff00.toInt());val p=create("source","photo.jpg",0xffff0000.toInt());val original=hash(existing);val incoming=hash(p);val gateway=MediaGateway(context);gateway.move(p,existing.path);assertNotEquals(existing.name,gateway.location(p)!!.second);assertEquals(original,hash(existing));assertEquals(incoming,hash(p))}
@@ -103,17 +110,49 @@ class MediaIntegrationTest {
                 assertEquals("pending",found!!.status)
                 assertEquals(setOf(first.path,second.path),runBlocking{db.store().all()}.filter{it.key in setOf(first.key,second.key)}.map{it.path}.toSet())
             } finally {db.close()}
+            for(index in 1..12)create("album-$index","cover.jpg",android.graphics.Color.rgb(50+index*12,90,160))
             device.pressBack()
             device.pressBack()
         }
         androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java).use {
             assertTrue(device.wait(Until.hasObject(By.text("收件箱")),5000))
             assertTrue(device.wait(Until.hasObject(By.text("全选本次")),10000))
+            assertFalse(device.hasObject(By.textStartsWith("本次 ")))
+            assertFalse(device.hasObject(By.textContains("长按后滑动")))
+            assertFalse(device.hasObject(By.text("归入相册")))
+            assertTrue(device.hasObject(By.textStartsWith("已选 ")))
             device.findObject(By.text("全选本次")).click()
+            val collapsed=device.findObjects(By.descStartsWith("选择相册 "))
+            val density=context.resources.displayMetrics.density
+            val expected=kotlin.math.floor(((context.resources.displayMetrics.widthPixels/density-40)+12)/104).toInt().coerceAtLeast(1)
+            assertEquals("Collapsed row should show only whole cards that fit",expected,collapsed.size)
+            assertEquals(1,collapsed.map{it.visibleBounds.top}.toSet().size)
+            assertTrue(collapsed.all{kotlin.math.abs(it.visibleBounds.width()-it.visibleBounds.height())<=2})
+            saveScreenshot(device,"inbox-cards.png")
             device.findObject(By.text("全部相册")).click()
             assertTrue(device.wait(Until.hasObject(By.text("选择相册")),5000))
-            assertTrue(device.hasObject(By.text("first")))
-            assertTrue(device.hasObject(By.text("second")))
+            val expanded=device.findObjects(By.descStartsWith("选择相册 "))
+            assertTrue("Expanded sheet should show a grid",expanded.size>collapsed.size)
+            saveScreenshot(device,"album-grid.png")
+            val scroller=device.findObject(By.scrollable(true))
+            assertNotNull("Expanded albums should scroll",scroller)
+            scroller!!.scroll(androidx.test.uiautomator.Direction.DOWN,1f)
+            val card=device.wait(Until.findObject(By.desc("选择相册 second")),5000)
+            assertNotNull(card)
+            card!!.click()
+            assertTrue(device.wait(Until.gone(By.text("选择相册")),5000))
+            val db=Room.databaseBuilder(context,Database::class.java,"ceye.db").build()
+            try {
+                val deadline=android.os.SystemClock.uptimeMillis()+5000
+                var planned=emptyList<Photo>()
+                while(android.os.SystemClock.uptimeMillis()<deadline){
+                    planned=runBlocking{db.store().all()}.filter{it.status=="planned"}
+                    if(planned.isNotEmpty())break
+                    android.os.SystemClock.sleep(100)
+                }
+                assertTrue("Cover card must save classification decisions",planned.isNotEmpty())
+                assertTrue(planned.all{it.target=="Pictures/CeYeTest-$unique/second/"&&it.intent=="move"})
+            } finally {db.close()}
             assertFalse(device.hasObject(By.text("选择归档相册")))
             assertFalse(device.hasObject(By.res("com.android.permissioncontroller","permission_deny_button")))
         }
