@@ -1,0 +1,38 @@
+{
+  "approved_date": "2026-11-02",
+  "authority": "User confirmed blue-neutral selection design in this chat",
+  "accepted_source": "C:\\Users\\16047\\.codex\\visualizations\\2026\\11\\02\\01a19a6b-ab0d-76a1-b2f8-bda0598ad8f6\\photo-app-selection.html",
+  "source_sha256": "883a787b4b08dbe0a9502e6c92dbc7f295238b936b4ec688df458cf38a7bf763",
+  "frozen_reference_sha256": "883a787b4b08dbe0a9502e6c92dbc7f295238b936b4ec688df458cf38a7bf763",
+  "files": {
+    "DESIGN.md": {
+      "sha256": "2e1530e8e9d8f56317f7a00418b7fe1a2c3b0d9369803eb060a89af378c6bda5",
+      "bytes": 9422
+    },
+    "docs/design-contract.md": {
+      "sha256": "6801f4d6b40c132265a513dcc7743d32490fd59945e290235be086bf62a07547",
+      "bytes": 3063
+    },
+    "docs/implementation-handoff.md": {
+      "sha256": "97e8cfe579b6cfa3a971317ef22759eff74e0c8b4cb8b58bc127c5ad121040f1",
+      "bytes": 2424
+    },
+    "docs/TECH_STACK.md": {
+      "sha256": "1ff4b089cb486d6ebefc822b323005938061c478e0ed48736cfdab92e1345ed7",
+      "bytes": 4989
+    },
+    "docs/design-reference/approved-ui-v1.html": {
+      "sha256": "883a787b4b08dbe0a9502e6c92dbc7f295238b936b4ec688df458cf38a7bf763",
+      "bytes": 47419
+    },
+    "docs/design-reference/tokens.json": {
+      "sha256": "5597a0e21fc8ab732eb608c70ab7fd0267377d494f8351b3e94c20a0f5b2c452",
+      "bytes": 18494
+    },
+    "docs/design-reference/selection-gesture-check.cjs": {
+      "sha256": "e034d3bbbb9c0e7dc937bc65bc9492a9bd1ed137955497e8f3dab9156cc5cc0d",
+      "bytes": 6681
+    }
+  },
+  "note": "App source was not present; this handoff only adds documentation and the frozen design reference."
+}

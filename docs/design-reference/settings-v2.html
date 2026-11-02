@@ -1,0 +1,335 @@
+<style>
+#photo-app-simple-settings{--pa-bg:light-dark(#fff,#1b1d22);--pa-canvas:light-dark(#f6f7f9,#121419);--pa-text:light-dark(#292d36,#eceef4);--pa-sub:light-dark(#69717e,#b5bcc9);--pa-line:light-dark(#e7e9ee,#373c46);--pa-soft:light-dark(#f0f2f6,#292e38);--pa-accent:light-dark(#4967c7,#adc0ff);--pa-on:light-dark(#fff,#182650);--pa-danger:light-dark(#a14943,#f0b2aa);--pa-radius:16px;font-family:"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;color:var(--pa-text);width:100%}
+#photo-app-simple-settings *{box-sizing:border-box}
+#photo-app-simple-settings button,#photo-app-simple-settings select{font:inherit;cursor:inherit;touch-action:manipulation}
+#photo-app-simple-settings button{color:inherit}
+#photo-app-simple-settings button:focus-visible,#photo-app-simple-settings input:focus-visible{outline:3px solid var(--pa-accent);outline-offset:3px}
+#photo-app-simple-settings button:active{filter:brightness(.94)}
+#photo-app-simple-settings .pa-preview-nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:0 0 16px;padding-right:68px}
+#photo-app-simple-settings .pa-preview-nav button{border:0;background:var(--pa-canvas);padding:10px 13px;border-radius:8px;font-size:13px;min-height:40px}
+#photo-app-simple-settings .pa-preview-nav button[aria-pressed=true]{background:var(--pa-soft);color:var(--pa-accent);box-shadow:inset 0 -2px var(--pa-accent)}
+#photo-app-simple-settings .pa-stage{padding:20px 8px;display:flex;justify-content:center;border-radius:20px}
+#photo-app-simple-settings .pa-phone{position:relative;width:min(100%,390px);background:var(--pa-bg);border:1px solid var(--pa-line);border-radius:28px;box-shadow:0 10px 40px #202b4010;overflow:hidden;font-size:14px;line-height:1.5}
+#photo-app-simple-settings .pa-status{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:12px;font-weight:500}
+#photo-app-simple-settings .pa-status-right{display:flex;gap:6px;align-items:center}
+#photo-app-simple-settings .pa-status-right svg{width:14px;height:14px}
+#photo-app-simple-settings .pa-app{min-height:700px;display:flex;flex-direction:column;position:relative}
+#photo-app-simple-settings .pa-header{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 4px;gap:8px}
+#photo-app-simple-settings .pa-header h2{font-size:26px;line-height:1.3;font-weight:500;margin:0;letter-spacing:.02em}
+#photo-app-simple-settings .pa-header-group{display:flex;gap:8px;align-items:center}
+#photo-app-simple-settings .pa-icon{display:inline-flex;justify-content:center;align-items:center;border:0;background:transparent;min-width:48px;min-height:48px;border-radius:12px;padding:10px}
+#photo-app-simple-settings .pa-icon svg{width:21px;height:21px;stroke-width:1.7}
+#photo-app-simple-settings .pa-text-button{border:0;background:transparent;padding:12px 8px;min-height:48px;font-size:14px;color:var(--pa-sub);border-radius:10px}
+#photo-app-simple-settings .pa-caption{font-size:13px;color:var(--pa-sub);margin:2px 20px 14px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+#photo-app-simple-settings .pa-caption strong{color:var(--pa-text);font-weight:500}
+#photo-app-simple-settings .pa-progress{height:3px;background:var(--pa-soft);margin:0 20px 18px;border-radius:2px;overflow:hidden}
+#photo-app-simple-settings .pa-progress div{height:100%;background:var(--pa-accent);border-radius:2px;transition:width .18s ease}
+#photo-app-simple-settings .pa-photo-frame{background:var(--pa-canvas);margin:0 20px;border-radius:var(--pa-radius);overflow:hidden;position:relative;aspect-ratio:1.04;display:flex;align-items:center;justify-content:center}
+#photo-app-simple-settings .pa-photo-frame img{display:block;width:100%;height:100%;object-fit:contain}
+#photo-app-simple-settings .pa-photo-frame button{position:absolute;right:8px;bottom:8px;background:var(--pa-bg);min-width:48px;min-height:48px;opacity:.95}
+#photo-app-simple-settings .pa-photo-info{display:flex;justify-content:space-between;gap:8px;margin:11px 20px 12px;color:var(--pa-sub);font-size:12px}
+#photo-app-simple-settings .pa-album-head{margin:0 20px;display:flex;justify-content:space-between;align-items:center}
+#photo-app-simple-settings .pa-album-head p{font-weight:500;margin:0}
+#photo-app-simple-settings .pa-album-head button{font-size:12px}
+#photo-app-simple-settings .pa-destinations{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 20px 14px}
+#photo-app-simple-settings .pa-destination{border:1px solid var(--pa-line);border-radius:12px;min-height:52px;padding:10px 12px;display:flex;align-items:center;gap:10px;background:var(--pa-bg);text-align:left}
+#photo-app-simple-settings .pa-destination svg{color:var(--pa-accent);width:19px;height:19px;stroke-width:1.6}
+#photo-app-simple-settings .pa-destination[aria-pressed=true]{background:var(--pa-soft);border-color:var(--pa-accent)}
+#photo-app-simple-settings .pa-destination:disabled{opacity:.5}
+#photo-app-simple-settings .pa-footer{margin-top:auto;padding:10px 20px 4px;background:var(--pa-bg)}
+#photo-app-simple-settings .pa-footer-actions{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+#photo-app-simple-settings .pa-secondary{border:1px solid var(--pa-line);background:var(--pa-bg);border-radius:12px;min-height:50px;padding:10px 14px;display:flex;justify-content:center;align-items:center;gap:6px;font-size:14px}
+#photo-app-simple-settings .pa-secondary svg{width:18px;height:18px}
+#photo-app-simple-settings .pa-primary{background:var(--pa-accent);color:var(--pa-on);border:0;border-radius:12px;min-height:50px;padding:12px 16px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;flex:1;font-size:14px}
+#photo-app-simple-settings .pa-primary svg{width:18px;height:18px}
+#photo-app-simple-settings .pa-primary:disabled{background:var(--pa-soft);color:var(--pa-sub)}
+#photo-app-simple-settings .pa-footnote{font-size:11px;color:var(--pa-sub);text-align:center;margin:0;padding:0 0 10px}
+#photo-app-simple-settings .pa-homebar{height:20px;display:flex;justify-content:center;align-items:center;background:var(--pa-bg)}
+#photo-app-simple-settings .pa-homebar:after{content:"";width:100px;height:4px;background:var(--pa-text);opacity:.65;border-radius:3px}
+#photo-app-simple-settings .pa-grid-tools{display:flex;justify-content:space-between;align-items:center;margin:0 20px 8px;font-size:13px;gap:8px}
+#photo-app-simple-settings .pa-grid-tools button{color:var(--pa-accent)}
+#photo-app-simple-settings .pa-photo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:0 20px 16px}
+#photo-app-simple-settings .pa-thumb{position:relative;aspect-ratio:1;border:0;padding:0;background:var(--pa-canvas);border-radius:7px;overflow:hidden}
+#photo-app-simple-settings .pa-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+#photo-app-simple-settings .pa-tick{position:absolute;right:6px;top:6px;width:21px;height:21px;border:1.5px solid #fff;background:#252c3835;border-radius:50%;display:flex;justify-content:center;align-items:center;color:#fff}
+#photo-app-simple-settings .pa-tick svg{width:14px;height:14px;stroke-width:2.5}
+#photo-app-simple-settings .pa-thumb[aria-pressed=true] .pa-tick{background:var(--pa-accent);color:var(--pa-on);border-color:var(--pa-accent)}
+#photo-app-simple-settings .pa-thumb[aria-pressed=true]{box-shadow:inset 0 0 0 3px var(--pa-accent)}
+#photo-app-simple-settings .pa-thumb[aria-pressed=true] img{opacity:.78}
+#photo-app-simple-settings .pa-tag{position:absolute;bottom:4px;left:4px;font-size:11px;border-radius:4px;padding:2px 6px;background:var(--pa-bg);color:var(--pa-accent)}
+#photo-app-simple-settings .pa-inline-note{display:flex;align-items:center;gap:8px;padding:11px 12px;margin:0 20px 12px;border-radius:10px;background:var(--pa-soft);font-size:12px;color:var(--pa-accent)}
+#photo-app-simple-settings .pa-inline-note svg{width:16px;height:16px;flex:none}
+#photo-app-simple-settings .pa-sheet-backdrop{position:absolute;inset:0;background:#17213344;z-index:10;display:flex;align-items:flex-end;border-radius:0 0 28px 28px}
+#photo-app-simple-settings .pa-sheet{width:100%;padding:8px 20px 16px;border-radius:24px 24px 0 0;background:var(--pa-bg);box-shadow:0 -8px 32px #17213318}
+#photo-app-simple-settings .pa-handle{width:32px;height:4px;border-radius:3px;background:var(--pa-line);margin:0 auto 8px}
+#photo-app-simple-settings .pa-sheet-head{display:flex;align-items:center;justify-content:space-between}
+#photo-app-simple-settings .pa-sheet h3{font-size:20px;font-weight:500;margin:0}
+#photo-app-simple-settings .pa-sheet-desc{font-size:13px;color:var(--pa-sub);margin:0 0 16px}
+#photo-app-simple-settings .pa-move-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--pa-line)}
+#photo-app-simple-settings .pa-move-row img{width:46px;height:46px;object-fit:cover;border-radius:8px}
+#photo-app-simple-settings .pa-move-row>div{flex:1;min-width:0}
+#photo-app-simple-settings .pa-move-row strong{display:block;font-weight:500;font-size:14px}
+#photo-app-simple-settings .pa-move-row small{display:block;font-size:11px;color:var(--pa-sub);overflow-wrap:anywhere}
+#photo-app-simple-settings .pa-summary{font-size:13px;color:var(--pa-sub);padding:16px 0;margin:0}
+#photo-app-simple-settings .pa-sheet-actions{display:flex;gap:10px}
+#photo-app-simple-settings .pa-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:38px 24px;flex:1}
+#photo-app-simple-settings .pa-complete-mark{width:68px;height:68px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--pa-soft);color:var(--pa-accent);margin-bottom:8px}
+#photo-app-simple-settings .pa-complete-mark svg{width:30px;height:30px;stroke-width:1.5}
+#photo-app-simple-settings .pa-empty h3{font-size:24px;margin:0;font-weight:500}
+#photo-app-simple-settings .pa-empty p{font-size:14px;color:var(--pa-sub);margin:0;max-width:260px}
+#photo-app-simple-settings .pa-empty .pa-primary{flex:none;width:100%;margin-top:20px}
+#photo-app-simple-settings .pa-segment{display:flex;align-items:center;gap:24px;margin:8px 20px 20px;border-bottom:1px solid var(--pa-line)}
+#photo-app-simple-settings .pa-segment button{border:0;background:transparent;font-size:15px;min-height:48px;padding:0 2px 12px;color:var(--pa-sub)}
+#photo-app-simple-settings .pa-segment button[aria-pressed=true]{color:var(--pa-accent);box-shadow:inset 0 -2px var(--pa-accent)}
+#photo-app-simple-settings .pa-library-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px 14px;margin:0 20px 24px}
+#photo-app-simple-settings .pa-album{border:0;background:transparent;text-align:left;padding:0;min-width:0}
+#photo-app-simple-settings .pa-cover{width:100%;aspect-ratio:1.12;object-fit:cover;border-radius:var(--pa-radius);display:block;background:var(--pa-canvas);margin-bottom:9px}
+#photo-app-simple-settings .pa-album-label{display:flex;gap:8px;justify-content:space-between;align-items:center;font-size:15px}
+#photo-app-simple-settings .pa-album-label small{font-size:12px;color:var(--pa-sub)}
+#photo-app-simple-settings .pa-library-nav{margin-top:auto;border-top:1px solid var(--pa-line);display:grid;grid-template-columns:1fr 1fr;padding:5px 36px 0}
+#photo-app-simple-settings .pa-library-nav button{min-height:62px;display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:transparent;color:var(--pa-sub);font-size:11px;padding:8px}
+#photo-app-simple-settings .pa-library-nav svg{width:22px;height:22px;stroke-width:1.7}
+#photo-app-simple-settings .pa-library-nav button[aria-pressed=true]{color:var(--pa-accent)}
+#photo-app-simple-settings .pa-toast{margin:0 20px 12px;background:var(--pa-soft);color:var(--pa-accent);border-radius:10px;padding:10px 12px;font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+#photo-app-simple-settings .pa-toast button{font-size:12px;border:0;background:transparent;min-height:36px;color:inherit;padding:0 4px}
+#photo-app-simple-settings .pa-section-title{margin:18px 20px 8px;font-size:12px;color:var(--pa-sub)}
+#photo-app-simple-settings .pa-setting-row{display:flex;align-items:center;gap:12px;margin:0 20px;padding:14px 0;border-bottom:1px solid var(--pa-line);min-height:64px}
+#photo-app-simple-settings .pa-setting-row>div{flex:1;min-width:0}
+#photo-app-simple-settings .pa-setting-row strong{display:block;font-size:14px;font-weight:400}
+#photo-app-simple-settings .pa-setting-row small{display:block;font-size:12px;color:var(--pa-sub);margin-top:3px}
+#photo-app-simple-settings .pa-setting-row button{font-size:13px;color:var(--pa-accent);flex-shrink:0}
+#photo-app-simple-settings .pa-setting-row input{accent-color:var(--pa-accent);width:20px;height:20px;margin:10px}
+#photo-app-simple-settings .pa-setting-footer{margin:28px 20px;color:var(--pa-sub);font-size:12px}
+#photo-app-simple-settings .pa-viewer{background:#111318;color:#f2f3f6;flex:1;display:flex;flex-direction:column;min-height:700px}
+#photo-app-simple-settings .pa-viewer .pa-text-button{color:#c6cbd6}
+#photo-app-simple-settings .pa-viewer-image{width:100%;aspect-ratio:1;object-fit:contain;margin:auto 0}
+#photo-app-simple-settings .pa-viewer-tools{display:flex;justify-content:space-evenly;padding:16px 8px;gap:6px}
+#photo-app-simple-settings .pa-viewer-tools button{min-width:64px;display:flex;flex-direction:column;gap:6px;font-size:12px}
+#photo-app-simple-settings .pa-viewer-tools svg{width:22px;height:22px}
+#photo-app-simple-settings .pa-grid-scroll{height:350px;min-height:180px;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin;scrollbar-color:var(--pa-line) transparent}
+#photo-app-simple-settings .pa-grid-scroll .pa-grid-tools{margin-bottom:4px}
+#photo-app-simple-settings .pa-grid-scroll .pa-photo-grid{margin-bottom:8px}
+#photo-app-simple-settings .pa-grid-scroll .pa-thumb{touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#photo-app-simple-settings .pa-grid-scroll img{pointer-events:none;user-select:none;-webkit-user-drag:none}
+#photo-app-simple-settings .pa-grid-scroll.is-selecting{cursor:crosshair;user-select:none}
+#photo-app-simple-settings .pa-grid-scroll.is-selecting .pa-thumb{filter:none}
+#photo-app-simple-settings .pa-grid-scroll .pa-thumb[aria-pressed=true]::after{content:"";position:absolute;inset:0;border:3px solid var(--pa-accent);border-radius:7px;pointer-events:none}
+#photo-app-simple-settings .pa-grid-dock{padding-top:4px;border-top:1px solid var(--pa-line);background:var(--pa-bg);margin-top:auto}
+#photo-app-simple-settings .pa-grid-dock .pa-destinations{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding-bottom:4px}
+#photo-app-simple-settings .pa-grid-dock .pa-destination{min-height:48px;padding:8px 3px;justify-content:center;gap:0;font-size:13px}
+#photo-app-simple-settings .pa-grid-dock .pa-destination svg{display:none}
+#photo-app-simple-settings .pa-grid-dock .pa-footer{padding-top:8px}
+#photo-app-simple-settings .pa-grid-selection-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 20px;min-height:48px}
+#photo-app-simple-settings .pa-grid-selection-bar span{font-size:13px}
+#photo-app-simple-settings .pa-grid-hint{margin:0 20px 8px;font-size:12px;line-height:1.5;color:var(--pa-sub);min-height:36px}
+#photo-app-simple-settings .pa-grid-hint.is-active{color:var(--pa-accent)}
+#photo-app-simple-settings .pa-selection-live{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#photo-app-simple-settings .pa-settings-list{margin:16px 20px 0}
+#photo-app-simple-settings .pa-settings-action{width:100%;margin:0;border:0;border-bottom:1px solid var(--pa-line);background:var(--pa-bg);text-align:left;min-height:76px;padding:16px 0}
+#photo-app-simple-settings .pa-settings-action>svg{width:18px;height:18px;color:var(--pa-sub);flex:none}
+#photo-app-simple-settings .pa-settings-brand{margin:auto 20px 24px;text-align:center;color:var(--pa-sub);font-size:12px;padding-top:32px}
+@media(max-width:360px){#photo-app-simple-settings .pa-stage{padding:12px 0}#photo-app-simple-settings .pa-preview-nav{padding-right:0;gap:5px}#photo-app-simple-settings .pa-preview-nav button{padding:9px 10px}#photo-app-simple-settings .pa-phone{border-radius:20px}#photo-app-simple-settings .pa-header h2{font-size:24px}#photo-app-simple-settings .pa-header,#photo-app-simple-settings .pa-footer{padding-left:16px;padding-right:16px}#photo-app-simple-settings .pa-destinations{padding-left:16px;padding-right:16px}}
+@media(prefers-reduced-motion:reduce){#photo-app-simple-settings *{transition:none!important}}
+</style>
+<div id="photo-app-simple-settings">
+  <nav class="pa-preview-nav" aria-label="设计预览页面">
+    <button type="button" class="cursor-interaction" data-preview="single" aria-pressed="true">单张分类</button>
+    <button type="button" class="cursor-interaction" data-preview="grid" aria-pressed="false">网格多选</button>
+    <button type="button" class="cursor-interaction" data-preview="confirm" aria-pressed="false">提交确认</button>
+    <button type="button" class="cursor-interaction" data-preview="library" aria-pressed="false">相册浏览</button>
+    <button type="button" class="cursor-interaction" data-preview="settings" aria-pressed="false">设置</button>
+  </nav>
+  <div class="pa-stage viz-dotted-background">
+    <div class="pa-phone" aria-label="照片整理 App 浅色界面方案">
+      <div class="pa-status"><span>9:41</span><div class="pa-status-right"><i data-lucide="signal" aria-hidden="true"></i><i data-lucide="wifi" aria-hidden="true"></i><i data-lucide="battery-full" aria-hidden="true"></i></div></div>
+      <div class="pa-app" id="pa-screen"></div>
+      <div class="pa-homebar" aria-hidden="true"></div>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+ const root=document.getElementById('photo-app-simple-settings');
+ const screen=root.querySelector('#pa-screen');
+ const base='https://cdn.jsdelivr.net/gh/ianare/exif-samples@master/jpg/gps/';
+ const sampleNames=['DSCN0010','DSCN0012','DSCN0021','DSCN0040','DSCN0042','DSCN0010'];
+ const sampleLabels=['庭院远景','林间空地','公园步道','石砌教堂','城市街角','庭院留影'];
+ const photos=Array.from({length:36},(_,i)=>({id:i,src:base+sampleNames[i%6]+'.jpg',alt:sampleLabels[i%6],date:['今天','昨天','10 月 31 日'][Math.floor(i/12)]}));
+ const albums=[{name:'旅行',path:'Pictures/旅行/',count:128,cover:0},{name:'家人',path:'Pictures/家人/',count:86,cover:1},{name:'工作',path:'Pictures/工作/',count:42,cover:2},{name:'生活',path:'Pictures/生活/',count:215,cover:4}];
+ const state={view:'settings',assign:{},done:[],selected:[],history:[],modal:null,toast:'',libraryTab:'albums',currentAlbum:null,currentPhoto:0,busy:false,failed:[],pendingTrash:[],lastCommit:null,targets:['旅行','家人','工作','生活']};
+ const design={accent:'#4967c7',radius:16};
+ const saved=window.openai?.widgetState?.privateContent;
+ if(saved?.palette==='blue-neutral'&&saved?.design){if(/^#[0-9a-f]{6}$/i.test(saved.design.accent))design.accent=saved.design.accent;if(Number.isFinite(saved.design.radius))design.radius=Math.max(0,Math.min(24,saved.design.radius));}
+ const icon=(name)=>`<i data-lucide="${name}" aria-hidden="true"></i>`;
+ const btn=(label,action,cls='pa-text-button',extra='')=>`<button type="button" class="${cls} cursor-interaction" data-action="${action}" ${extra}>${label}</button>`;
+ const image=(p,cls='')=>`<img src="${p.src}" alt="${p.alt}（示例照片）" class="${cls}" decoding="async">`;
+ const pending=()=>Object.keys(state.assign).filter(k=>!state.done.includes(Number(k)));
+ const remaining=()=>photos.filter(p=>!state.done.includes(p.id)&&!state.pendingTrash.includes(p.id)&&state.assign[p.id]===undefined);
+ const persist=()=>window.openai?.setWidgetState?.({modelContent:{design:'白灰蓝，设置仅保留归档相册与照片权限',preview:state.view},privateContent:{design,palette:'blue-neutral'}})?.catch(()=>{});
+ const notify=(text)=>{state.toast=text;};
+ const header=(title,right='',back=false)=>`<header class="pa-header"><div class="pa-header-group">${back?btn(icon('arrow-left'),'back','pa-icon','aria-label="返回"'):''}<h2>${title}</h2></div><div class="pa-header-group">${right}</div></header>`;
+ function destinationButtons(ids){return `<div class="pa-destinations">${albums.map(a=>btn(`${icon('folder')}<span>${a.name}</span>`,'assign:'+a.name,'pa-destination',ids.length?'':'disabled')).join('')}</div>`;}
+ function toast(){return state.toast?`<div class="pa-toast" role="status"><span>${state.toast}</span>${state.lastCommit?btn('撤销移动','undo-move'):''}</div>`:'';}
+ function footer(){const count=pending().length+state.pendingTrash.length;return `<footer class="pa-footer"><div class="pa-footer-actions">${btn(icon('undo-2'),'undo','pa-secondary','aria-label="撤销上次分类" '+(state.history.length?'':'disabled'))}${btn(`提交已选照片${count?' · '+count:''}`,'submit','pa-primary',count?'':'disabled')}</div><p class="pa-footnote">选择相册后先保存决定，提交时移动照片</p></footer>`;}
+ function gridInbox(){
+ const available=photos.filter(p=>!state.done.includes(p.id));
+ const allSelected=available.length>0&&available.every(p=>state.selected.includes(p.id));
+ let html=header('收件箱',`${btn(icon('rectangle-vertical'),'toggle-view','pa-icon','aria-label="切换单张"')}${btn(icon('ellipsis'),'menu','pa-icon','aria-label="整理选项"')}`);
+ html+=`<div class="pa-caption"><span>本次 <strong>${photos.length}</strong> 张，已归档 ${state.done.length} 张</span><span>${pending().length+state.pendingTrash.length} 张待提交</span></div>`;
+ html+=`<div class="pa-grid-selection-bar"><span id="pa-selection-count">已选 ${state.selected.length} 张</span>${btn(allSelected?'取消全选':'全选本次','select-all','pa-text-button','id="pa-select-all"')}</div>`;
+ html+='<p class="pa-grid-hint" id="pa-selection-hint">长按后滑动连续选择；从已选照片开始可连续取消。</p><div class="pa-selection-live" id="pa-selection-live" role="status" aria-live="polite"></div>';
+ if(!available.length)html+='<div class="pa-empty"><h3>这批照片已处理</h3></div>';
+ else{html+='<div class="pa-grid-scroll" id="pa-grid-scroll" role="region" aria-label="待分类照片，可上下滚动">';
+ for(const date of [...new Set(available.map(p=>p.date))]){const group=available.filter(p=>p.date===date);const selected=group.every(p=>state.selected.includes(p.id));
+ html+=`<div class="pa-grid-tools"><span>${date} · ${group.length} 张</span>${btn(selected?'取消当天':'选择当天','select-day:'+date)}</div><div class="pa-photo-grid">${group.map(p=>`<button type="button" class="pa-thumb cursor-interaction" data-photo="${p.id}" data-action="select:${p.id}" aria-label="选择照片 ${p.id+1}：${p.alt}" aria-pressed="${state.selected.includes(p.id)}">${image(p)}<span class="pa-tick">${state.selected.includes(p.id)?icon('check'):''}</span>${state.assign[p.id]?`<span class="pa-tag">${state.assign[p.id]}</span>`:state.pendingTrash.includes(p.id)?'<span class="pa-tag">待移入回收站</span>':''}</button>`).join('')}</div>`;
+ }html+='</div>';}
+ html+=`<div class="pa-grid-dock"><div class="pa-album-head"><p>归入相册</p>${btn('全部相册','all-albums')}</div>${destinationButtons(state.selected)}${state.toast?`<div class="pa-footnote" role="status">${state.toast}</div>`:''}<div class="pa-footer"><div class="pa-footer-actions">${btn(icon('undo-2'),'undo','pa-secondary','aria-label="撤销上次分类" '+(state.history.length?'':'disabled'))}${btn(icon('trash-2'),'trash','pa-secondary','aria-label="移入回收站" id="pa-grid-trash" '+(state.selected.length?'':'disabled'))}${btn(`提交已选${pending().length+state.pendingTrash.length?' · '+(pending().length+state.pendingTrash.length):''}`,'submit','pa-primary',(pending().length+state.pendingTrash.length)?'':'disabled')}</div><p class="pa-footnote">先选择相册，再提交移动</p></div></div>`;
+ return html;
+ }
+ function inbox(){const rem=remaining();const isGrid=state.view==='grid';const current=rem[0];if(isGrid)return gridInbox();
+  const right=`${btn(isGrid?icon('rectangle-vertical'):icon('grid-2x2'),'toggle-view','pa-icon',`aria-label="${isGrid?'切换单张':'切换网格'}"`)}${btn(icon('ellipsis'),'menu','pa-icon','aria-label="整理选项"')}`;
+  let html=header('收件箱',right)+`<div class="pa-caption"><span>本次 <strong>${photos.length}</strong> 张<span>，已归档 ${state.done.length} 张</span></span><span>${pending().length+state.pendingTrash.length} 张待提交</span></div><div class="pa-progress" role="progressbar" aria-label="本次归档进度" aria-valuenow="${state.done.length}" aria-valuemin="0" aria-valuemax="${photos.length}"><div style="width:${state.done.length/photos.length*100}%"></div></div>`;
+  html+=toast();
+  if(!rem.length){html+=`<div class="pa-empty"><div class="pa-complete-mark">${icon('folder-check')}</div><h3>分类已选好</h3><p>提交后，照片会移动到对应的手机相册。</p></div>`;}
+  else if(isGrid){html+=`<div class="pa-grid-tools"><span>今天 · ${rem.length} 张待分类</span>${btn(state.selected.length===rem.length?'取消全选':'全选','select-all')}</div><div class="pa-photo-grid">${photos.filter(p=>!state.done.includes(p.id)).map(p=>`<button type="button" class="pa-thumb cursor-interaction" data-action="select:${p.id}" aria-label="选择照片 ${p.id+1}：${p.alt}" aria-pressed="${state.selected.includes(p.id)}">${image(p)}<span class="pa-tick">${state.selected.includes(p.id)?icon('check'):''}</span>${state.assign[p.id]?`<span class="pa-tag">${state.assign[p.id]}</span>`:state.pendingTrash.includes(p.id)?'<span class="pa-tag">待移入回收站</span>':''}</button>`).join('')}</div><div class="pa-album-head"><p>已选 ${state.selected.length} 张</p>${btn('移入回收站','trash')}</div>`;}
+  else{html+=`<div class="pa-photo-frame">${image(current)}${btn(icon('maximize-2'),'zoom:'+current.id,'pa-icon','aria-label="放大查看照片"')}</div><div class="pa-photo-info"><span>今天 14:32</span><span>来自相机</span></div><div class="pa-album-head"><p>归入相册</p>${btn('全部相册','all-albums')}</div>`;}
+  if(rem.length)html+=destinationButtons(isGrid?state.selected:[current.id]);
+  if(isGrid&&rem.length)html+=`<p class="pa-footnote">点选多张照片，再选择同一个目标相册</p>`;
+  html+=footer();return html;
+ }
+ function library(){const inAlbum=state.currentAlbum;let title=inAlbum||'相册';let html=header(title,`${btn(icon('settings-2'),'settings','pa-icon','aria-label="设置"')}`,!!inAlbum)+`<div class="pa-caption"><span>${inAlbum?'手机已有相册':'与手机已有相册保持一致'}</span>${inAlbum?'':btn('整理','organize')}</div>`;
+ html+=toast();
+ if(inAlbum||state.libraryTab==='photos'){html+=`<div class="pa-grid-tools"><span>今天</span><span>${photos.length} 张</span></div><div class="pa-photo-grid">${photos.map(p=>`<button type="button" class="pa-thumb cursor-interaction" data-action="zoom:${p.id}" aria-label="查看照片 ${p.id+1}：${p.alt}">${image(p)}</button>`).join('')}</div>`;}
+ else{html+=`<div class="pa-segment">${btn('全部相册','album-filter:all','', 'aria-pressed="'+!state.onlyTargets+'"')}${btn('归档目标','album-filter:targets','', 'aria-pressed="'+!!state.onlyTargets+'"')}</div><div class="pa-library-grid">${albums.filter(a=>!state.onlyTargets||state.targets.includes(a.name)).map(a=>`<button type="button" class="pa-album cursor-interaction" data-action="album:${a.name}" aria-label="打开${a.name}相册">${image(photos[a.cover],'pa-cover')}<span class="pa-album-label"><span>${a.name}</span><small>${a.count+state.done.filter(id=>state.assign[id]===a.name).length}</small></span></button>`).join('')}</div>`;}
+ html+=`<nav class="pa-library-nav" aria-label="相册主导航">${btn(`${icon('images')}<span>照片</span>`,'tab:photos','',`aria-pressed="${state.libraryTab==='photos'}"`)}${btn(`${icon('panels-top-left')}<span>相册</span>`,'tab:albums','',`aria-pressed="${state.libraryTab==='albums'}"`)}</nav>`;return html;}
+ function settings(){return header('设置','',true)+`<div class="pa-settings-list">${btn(`<div><strong>归档相册</strong><small>已选 ${state.targets.length} 个相册</small></div>${icon('chevron-right')}`,'manage-targets','pa-setting-row pa-settings-action','aria-label="归档相册，已选 '+state.targets.length+' 个"')}${btn(`<div><strong>照片权限</strong><small>全部图片</small></div>${icon('chevron-right')}`,'permission','pa-setting-row pa-settings-action','aria-label="照片权限，全部图片"')}</div><p class="pa-settings-brand">册页</p>`;}
+ function viewer(){const p=photos[state.currentPhoto];return `<div class="pa-viewer">${header('今天',btn('14:32','photo-info'),true)}${image(p,'pa-viewer-image')}<div class="pa-viewer-tools">${btn(`${icon('share-2')}<span>分享</span>`,'share','pa-icon')}${btn(`${icon('folder-input')}<span>调整相册</span>`,'change-album','pa-icon')}${btn(`${icon('trash-2')}<span>回收站</span>`,'viewer-trash','pa-icon')}</div></div>`;}
+ function modal(){let contents='';
+ if(state.modal==='organize'){contents=`<h3 id="pa-dialog-title">整理</h3><div class="pa-settings-list" style="margin:12px 0 20px">${btn(`<div><strong>历史整理</strong><small>选择旧照片重新分类</small></div>${icon('chevron-right')}`,'history','pa-setting-row pa-settings-action')}${btn(`<div><strong>最近归档</strong><small>查看记录或撤销归档</small></div>${icon('chevron-right')}`,'records','pa-setting-row pa-settings-action')}</div>${btn('关闭','close-modal','pa-secondary','style="width:100%"')}`;}
+ if(state.modal==='confirm'){const groups={};pending().forEach(id=>groups[state.assign[id]]=(groups[state.assign[id]]||0)+1);contents=`<h3 id="pa-dialog-title">确认归档</h3><p class="pa-sheet-desc">移动至手机已有相册</p>${Object.entries(groups).map(([name,n])=>{const a=albums.find(a=>a.name===name);return `<div class="pa-move-row">${image(photos[a.cover])}<div><strong>${name}</strong><small>${a.path}</small></div><span>${n} 张</span></div>`;}).join('')}${state.pendingTrash.length?`<div class="pa-move-row">${icon('trash-2')}<div><strong>系统回收站</strong><small>成功后计为已处理</small></div><span>${state.pendingTrash.length} 张</span></div>`:''}<p class="pa-summary">共 ${pending().length+state.pendingTrash.length} 张。按系统提示确认后执行。</p><div class="pa-sheet-actions">${btn('继续分类','close-modal','pa-secondary')}${btn(state.busy?'正在归档…':'确认归档','commit','pa-primary',state.busy?'disabled':'')}</div>`;}
+ if(state.modal==='albums'||state.modal==='change'){contents=`<h3 id="pa-dialog-title">${state.modal==='change'?'调整相册':'选择相册'}</h3><p class="pa-sheet-desc">使用手机中已经存在的相册</p>${albums.map(a=>btn(`${icon('folder')}<div style="flex:1"><strong>${a.name}</strong><small style="display:block;font-size:11px;color:var(--pa-sub)">${a.path}</small></div>`,'choose:'+a.name,'pa-destination','style="width:100%;margin-bottom:8px"')).join('')}${btn('取消','close-modal','pa-secondary','style="width:100%"')}`;}
+ if(state.modal==='menu'){contents=`<h3 id="pa-dialog-title">整理选项</h3><p class="pa-sheet-desc">分类决定已自动保存</p>${btn('移入系统回收站','trash','pa-secondary','style="width:100%;margin-bottom:8px"')}${btn('设置','settings','pa-secondary','style="width:100%;margin-bottom:8px"')}${btn('暂停整理','pause','pa-secondary','style="width:100%;margin-bottom:8px"')}${btn('继续整理','close-modal','pa-primary','style="width:100%"')}`;}
+ if(state.modal==='targets'){contents=`<h3 id="pa-dialog-title">归档目标相册</h3><p class="pa-sheet-desc">新照片已在这些相册中时，自动视为已归档</p>${albums.map(a=>`<label class="pa-setting-row" style="margin:0"><div><strong>${a.name}</strong><small>${a.path}</small></div><input type="checkbox" data-target="${a.name}" aria-label="将${a.name}设为归档目标" ${state.targets.includes(a.name)?'checked':''}></label>`).join('')}${btn('完成','close-modal','pa-primary','style="width:100%;margin-top:16px"')}`;}
+ if(state.modal==='pause'){contents=`<h3 id="pa-dialog-title">整理已暂停</h3><p class="pa-sheet-desc">已选目标已保存，再次打开时继续分类。</p>${btn('继续整理','close-modal','pa-primary','style="width:100%"')}`;}
+ if(state.modal==='records'){contents=`<h3 id="pa-dialog-title">最近归档</h3><p class="pa-sheet-desc">归档后可以尝试移回原相册</p><div class="pa-move-row">${image(photos[0])}<div><strong>2 张照片归入旅行</strong><small>今天 09:40 · 原相册：相机</small></div>${btn('撤销','record-undo')}</div><p class="pa-summary">撤销移动时，可能需要再次确认系统授权。</p>${btn('完成','close-modal','pa-primary','style="width:100%"')}`;}
+ if(state.modal==='info'){contents=`<h3 id="pa-dialog-title">${state.infoTitle||'功能预览'}</h3><p class="pa-sheet-desc">${state.infoText||'此处展示交互位置，正式版本由 Android 系统完成。'}</p>${btn('知道了','close-modal','pa-primary','style="width:100%"')}`;}
+ if(state.modal==='trash'){contents=`<h3 id="pa-dialog-title">移入回收站？</h3><p class="pa-sheet-desc">${state.trashIds.length} 张图片将加入待提交列表，提交后按系统提示执行。</p><div class="pa-sheet-actions">${btn('取消','close-modal','pa-secondary')}${btn('加入待提交','confirm-trash','pa-primary')}</div>`;}
+ return `<div class="pa-sheet-backdrop"><section class="pa-sheet" role="dialog" aria-modal="true" aria-labelledby="pa-dialog-title"><div class="pa-handle" aria-hidden="true"></div><div class="pa-sheet-head"></div>${contents}</section></div>`;
+ }
+ let gridScrollPosition=0;let resetGridPosition=false;
+ function render(){const oldGrid=screen.querySelector('#pa-grid-scroll');if(oldGrid&&!resetGridPosition)gridScrollPosition=oldGrid.scrollTop;root.style.setProperty('--pa-accent','light-dark('+design.accent+',#adc0ff)');root.style.setProperty('--pa-radius',design.radius+'px');
+ let html='';if(state.view==='single'||state.view==='grid')html=inbox();else if(state.view==='library')html=library();else if(state.view==='settings')html=settings();else if(state.view==='viewer')html=viewer();else if(state.view==='complete')html=header('收件箱')+`<div class="pa-empty"><div class="pa-complete-mark">${icon('check')}</div><h3>这批照片，整理好了</h3><p>已归档 ${state.done.length} 张，去看看你的相册。</p>${btn('浏览相册','browse','pa-primary')}</div>`;
+ screen.innerHTML=html;const appContent=screen.children;if(state.modal){for(const child of appContent)child.inert=true;screen.insertAdjacentHTML('beforeend',modal());}
+ if(globalThis.lucide)lucide.createIcons({attrs:{'stroke-width':1.7}});
+ root.querySelectorAll('[data-preview]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.preview===(state.modal==='confirm'?'confirm':state.view))));
+ if(state.modal)screen.querySelector('.pa-sheet button, .pa-sheet input')?.focus({preventScroll:true});
+ const newGrid=screen.querySelector('#pa-grid-scroll');if(newGrid)newGrid.scrollTop=gridScrollPosition;resetGridPosition=false;
+ }
+ function assign(name){const ids=state.view==='grid'?state.selected:[remaining()[0]?.id];const good=ids.filter(i=>i!==undefined&&!state.done.includes(i));if(!good.length)return;state.history.push({assign:{...state.assign},trash:[...state.pendingTrash]});good.forEach(i=>{state.assign[i]=name;state.pendingTrash=state.pendingTrash.filter(x=>x!==i);});state.selected=[];state.toast=`${good.length} 张已选「${name}」，待提交`;}
+ function info(title,text){state.infoTitle=title;state.infoText=text;state.modal='info';}
+ function preview(view){gridScrollPosition=0;resetGridPosition=true;state.assign={};state.done=[];state.selected=[];state.pendingTrash=[];state.history=[];state.toast='';state.modal=null;state.lastCommit=null;state.currentAlbum=null;state.libraryTab='albums';state.onlyTargets=false;state.view=view==='confirm'?'grid':view;if(view==='confirm'){state.assign={0:'旅行',1:'旅行',2:'生活'};state.modal='confirm';}}
+ // Gesture selection keeps the grid DOM alive, preserving pointer capture and scroll.
+ function selectionRange(ids,baseline,anchor,end,selecting){
+ const result=new Set(baseline);const a=ids.indexOf(anchor),b=ids.indexOf(end);
+ if(a<0||b<0)return [...result];
+ for(let i=Math.min(a,b);i<=Math.max(a,b);i++){if(selecting)result.add(ids[i]);else result.delete(ids[i]);}
+ return [...result];
+ }
+ function paintSelection(){
+ const selected=new Set(state.selected);
+ screen.querySelectorAll('[data-photo]').forEach(el=>{const yes=selected.has(Number(el.dataset.photo));if(el.getAttribute('aria-pressed')===String(yes))return;el.setAttribute('aria-pressed',String(yes));el.querySelector('.pa-tick').innerHTML=yes?icon('check'):'';});
+ const count=screen.querySelector('#pa-selection-count');if(count)count.textContent=`已选 ${selected.size} 张`;
+ const available=photos.filter(p=>!state.done.includes(p.id));
+ const all=screen.querySelector('#pa-select-all');if(all)all.textContent=available.length&&available.every(p=>selected.has(p.id))?'取消全选':'全选本次';
+ screen.querySelectorAll('[data-action^="select-day:"]').forEach(el=>{const date=el.dataset.action.slice(11);el.textContent=available.filter(p=>p.date===date).every(p=>selected.has(p.id))?'取消当天':'选择当天';});
+ screen.querySelectorAll('.pa-grid-dock .pa-destination').forEach(el=>{el.disabled=!selected.size;});
+ const trash=screen.querySelector('#pa-grid-trash');if(trash)trash.disabled=!selected.size;
+ if(globalThis.lucide)lucide.createIcons({attrs:{'stroke-width':1.7}});
+ }
+ function installGridGesture(){
+ let drag=null;let suppressClickUntil=0;
+ const hint=(text,active=false)=>{const h=screen.querySelector('#pa-selection-hint');if(h){h.textContent=text;h.classList.toggle('is-active',active);}};
+ const resetHint=()=>hint('长按后滑动连续选择；从已选照片开始可连续取消。');
+ const finish=(cancelled=false)=>{
+  if(!drag)return;const d=drag;drag=null;clearTimeout(d.timer);cancelAnimationFrame(d.raf);
+  if(d.active||d.moved)suppressClickUntil=performance.now()+650;
+  d.scroller.classList.remove('is-selecting');
+  if(d.active){if(cancelled){state.selected=[...d.baseline];paintSelection();}resetHint();const live=screen.querySelector('#pa-selection-live');if(live)live.textContent=cancelled?'已取消本次滑选':`已选 ${state.selected.length} 张照片`;persist();}
+  if(d.pointerId!==undefined&&d.scroller.hasPointerCapture?.(d.pointerId))d.scroller.releasePointerCapture(d.pointerId);
+ };
+ const hit=()=>{if(!drag)return;const r=drag.scroller.getBoundingClientRect();if(drag.x<r.left||drag.x>r.right)return;const y=Math.min(r.bottom-3,Math.max(r.top+3,drag.y));const el=document.elementFromPoint(drag.x,y)?.closest('[data-photo]');if(!el||!drag.scroller.contains(el))return;const id=Number(el.dataset.photo);if(id===drag.end)return;drag.end=id;state.selected=selectionRange(drag.ids,drag.baseline,drag.anchor,id,drag.selecting);paintSelection();hint(`${drag.selecting?'正在连续选择':'正在连续取消'} · 已选 ${state.selected.length} 张`,true);};
+ const frame=(time)=>{
+  if(!drag?.active)return;const d=drag;const dt=Math.min(40,time-(d.lastTime||time));d.lastTime=time;
+  const r=d.scroller.getBoundingClientRect(),zone=56;let speed=0;
+  if(d.x>=r.left&&d.x<=r.right){if(d.y<r.top+zone)speed=-Math.min(1,(r.top+zone-d.y)/zone);else if(d.y>r.bottom-zone)speed=Math.min(1,(d.y-r.bottom+zone)/zone);}
+  if(speed){d.scroller.scrollTop+=speed*(100+650*Math.abs(speed))*dt/1000;hit();}
+  d.raf=requestAnimationFrame(frame);
+ };
+ const begin=(e,point,pointerId)=>{
+  if(state.view!=='grid'||state.modal||drag)return;const cell=e.target.closest('[data-photo]');if(!cell)return;const scroller=cell.closest('#pa-grid-scroll');if(!scroller)return;
+  const anchor=Number(cell.dataset.photo);drag={scroller,anchor,end:null,baseline:[...state.selected],ids:photos.filter(p=>!state.done.includes(p.id)).map(p=>p.id),selecting:!state.selected.includes(anchor),x:point.clientX,y:point.clientY,startX:point.clientX,startY:point.clientY,pointerId,active:false,moved:false,raf:0,timer:0};
+  const d=drag;d.timer=setTimeout(()=>{if(drag!==d)return;d.active=true;d.scroller.classList.add('is-selecting');if(pointerId!==undefined)d.scroller.setPointerCapture?.(pointerId);state.selected=selectionRange(d.ids,d.baseline,d.anchor,d.anchor,d.selecting);d.end=d.anchor;paintSelection();hint(`${d.selecting?'正在连续选择':'正在连续取消'} · 已选 ${state.selected.length} 张`,true);d.raf=requestAnimationFrame(frame);},420);
+ };
+ const move=(e,point)=>{if(!drag)return;drag.x=point.clientX;drag.y=point.clientY;if(!drag.active){if(Math.hypot(drag.x-drag.startX,drag.y-drag.startY)>10){drag.moved=true;clearTimeout(drag.timer);}return;}if(e.cancelable)e.preventDefault();hit();};
+ root.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch'&&e.button===0)begin(e,e,e.pointerId);});
+ root.addEventListener('pointermove',e=>{if(e.pointerType!=='touch')move(e,e);},{passive:false});
+ window.addEventListener('pointerup',e=>{if(e.pointerType!=='touch')finish();});
+ window.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch')finish(true);});
+ root.addEventListener('lostpointercapture',()=>finish());
+ root.addEventListener('touchstart',e=>{if(e.touches.length!==1){finish(true);return;}begin(e,e.touches[0]);},{passive:true});
+ root.addEventListener('touchmove',e=>{if(e.touches.length!==1){finish(true);return;}move(e,e.touches[0]);},{passive:false});
+ root.addEventListener('touchend',()=>finish());
+ root.addEventListener('touchcancel',()=>finish(true));
+ root.addEventListener('contextmenu',e=>{if(e.target.closest('#pa-grid-scroll'))e.preventDefault();});
+ root.addEventListener('dragstart',e=>{if(e.target.closest('#pa-grid-scroll'))e.preventDefault();});
+ root.addEventListener('click',e=>{if(e.target.closest('[data-photo]')&&performance.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation();}},true);
+ root.addEventListener('keydown',e=>{if(e.key==='Escape'&&drag){e.preventDefault();finish(true);}});
+ window.addEventListener('blur',()=>finish(true));
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)finish(true);});
+ }
+ installGridGesture();
+ root.addEventListener('change',e=>{const t=e.target.dataset.target;if(t){state.targets=e.target.checked?[...new Set([...state.targets,t])]:state.targets.filter(x=>x!==t);}});
+ root.addEventListener('click',async e=>{const previewButton=e.target.closest('[data-preview]');if(previewButton){preview(previewButton.dataset.preview);render();persist();return;}
+ const button=e.target.closest('[data-action]');if(!button||button.disabled)return;const action=button.dataset.action;const [op,arg]=action.split(':');
+ switch(op){
+ case 'toggle-view':state.view=state.view==='grid'?'single':'grid';state.selected=[];break;
+ case 'assign':assign(arg);break;
+ case 'select':{const id=Number(arg);state.selected=state.selected.includes(id)?state.selected.filter(i=>i!==id):[...state.selected,id];break;}
+ case 'select-all':{const ids=photos.filter(p=>!state.done.includes(p.id)).map(p=>p.id);state.selected=ids.every(id=>state.selected.includes(id))?[]:ids;break;}
+ case 'select-day':{const ids=photos.filter(p=>p.date===arg&&!state.done.includes(p.id)).map(p=>p.id);const all=ids.every(id=>state.selected.includes(id));state.selected=all?state.selected.filter(id=>!ids.includes(id)):[...new Set([...state.selected,...ids])];break;}
+ case 'all-albums':state.modal='albums';break;
+ case 'choose':if(state.modal==='change'){state.modal=null;info('调整相册',`将当前照片移动至「${arg}」。正式版本会按系统授权执行。`);}else{state.modal=null;assign(arg);}break;
+ case 'undo':{const last=state.history.pop();if(last){state.assign=last.assign;state.pendingTrash=last.trash;notify('已撤销上次分类');}break;}
+ case 'submit':if(pending().length+state.pendingTrash.length)state.modal='confirm';break;
+ case 'commit':{if(state.busy)return;state.busy=true;render();await new Promise(r=>setTimeout(r,450));const ids=[...pending().map(Number),...state.pendingTrash];state.lastCommit={done:[...state.done],assign:{...state.assign},trash:[...state.pendingTrash],ids};state.done=[...new Set([...state.done,...ids])];state.pendingTrash=[];state.selected=[];state.history=[];state.busy=false;state.modal=null;state.toast=`${ids.length} 张处理完成`;if(state.done.length===photos.length)state.view='complete';break;}
+ case 'undo-move':if(state.lastCommit){state.done=state.lastCommit.done;state.assign={};state.pendingTrash=[];state.lastCommit=null;state.view='grid';state.currentAlbum=null;notify('已撤销本批移动（演示）');}break;
+ case 'menu':state.modal='menu';break;
+ case 'pause':state.modal='pause';break;
+ case 'close-modal':state.modal=null;break;
+ case 'settings':state.returnView=state.view;state.modal=null;state.view='settings';break;
+ case 'organize':state.modal='organize';break;
+ case 'manage-targets':state.modal='targets';break;
+ case 'browse':state.view='library';state.toast='';break;
+ case 'tab':state.libraryTab=arg;state.currentAlbum=null;state.toast='';break;
+ case 'album-filter':state.onlyTargets=arg==='targets';break;
+ case 'album':state.currentAlbum=arg;break;
+ case 'back':if(state.view==='viewer'){state.view=state.viewerReturn||'library';}else if(state.view==='settings'){state.view=state.returnView||'library';}else if(state.currentAlbum){state.currentAlbum=null;}else state.view='library';state.toast='';break;
+ case 'zoom':state.currentPhoto=Number(arg);state.viewerReturn=state.view;state.view='viewer';state.toast='';break;
+ case 'change-album':if(state.viewerReturn==='single'||state.viewerReturn==='grid'){state.view=state.viewerReturn;state.modal='albums';if(state.view==='grid')state.selected=[state.currentPhoto];}else state.modal='change';break;
+ case 'trash':{const ids=state.view==='grid'?state.selected:[remaining()[0]?.id];state.trashIds=ids.filter(x=>x!==undefined);if(!state.trashIds.length){state.modal=null;notify('请先选择照片');}else state.modal='trash';break;}
+ case 'confirm-trash':state.history.push({assign:{...state.assign},trash:[...state.pendingTrash]});state.trashIds.forEach(id=>{delete state.assign[id];});state.pendingTrash=[...new Set([...state.pendingTrash,...state.trashIds])];state.selected=[];state.modal=null;notify(`${state.trashIds.length} 张待移入回收站`);break;
+ case 'viewer-trash':info('移入系统回收站','正式版本会请求系统确认，成功后更新照片列表。');break;
+ case 'share':info('分享照片','正式版本打开 Android 系统分享面板。');break;
+ case 'photo-info':info('照片信息','今天 14:32 · 来自相机 · 此处使用示例照片');break;
+ case 'history':info('历史照片整理','按日期或已有相册选择旧照片，加入一次独立的整理会话。');break;
+ case 'records':state.modal='records';break;
+ case 'record-undo':info('撤销归档','正式版本会尝试将这批照片移回原相册，并按需请求系统授权。');break;
+ case 'permission':info('照片访问权限','正式版本进入系统权限管理。仅允许部分图片时，会明确提示检测范围受限。');break;
+ }
+ render();persist();
+ });
+ root.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.modal){state.modal=null;render();}if(e.key==='Tab'&&state.modal){const f=[...screen.querySelectorAll('.pa-sheet button:not(:disabled),.pa-sheet input')];if(!f.length)return;const first=f[0],last=f[f.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
+ render();
+ if(globalThis.Tweak){const tweak=new Tweak({container:root.querySelector('.pa-phone'),onChange:()=>{render();persist();}});tweak.addColorPicker(design,'accent',{label:'强调色',reference:'--pa-accent'});tweak.addSlider(design,'radius',{label:'照片圆角',min:0,max:24,unit:'px',reference:'--pa-radius'});}
+})();
+</script>
